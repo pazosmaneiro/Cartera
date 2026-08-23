@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Cartera</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: #f8fafc; background-color: rgba(30, 41, 59, 0.5); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-12">
+
+  <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-2 w-full md:w-auto justify-between">
+        <h1 class="text-lg font-bold text-white">📈 Dashboard Cartera</h1>
+        <label class="cursor-pointer bg-slate-800 text-xs px-3 py-1.5 rounded-lg border border-slate-700">
+          📂 CSV <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
+        </label>
+      </div>
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <input type="text" id="sheetUrlInput" placeholder="URL Google Sheets..." class="bg-slate-900 border border-slate-800 text-xs px-3 py-2 rounded-lg text-slate-200 flex-1 md:w-80" />
+        <button onclick="loadFromUrl()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-2 rounded-lg font-medium">Cargar</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-3 sm:px-4 mt-4 space-y-5">
+    <div class="flex items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+      <span class="text-xs font-semibold text-slate-400">Marco Tarjetas:</span>
+      <div class="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+        <button onclick="setTimeframe('1D')" id="tf-1D" class="tf-btn px-2.5 py-1 rounded text-slate-400">1D</button>
+        <button onclick="setTimeframe('1W')" id="tf-1W" class="tf-btn px-2.5 py-1 rounded text-slate-400">1W</button>
+        <button onclick="setTimeframe('1M')" id="tf-1M" class="tf-btn px-2.5 py-1 rounded text-slate-400">1M</button>
+        <button onclick="setTimeframe('YTD')" id="tf-YTD" class="tf-btn px-2.5 py-1 rounded text-slate-400">YTD</button>
+        <button onclick="setTimeframe('1Y')" id="tf-1Y" class="tf-btn px-2.5 py-1 rounded text-slate-400">1Y</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <h2 class="text-xs font-bold text-emerald-400 mb-2 flex justify-between">🚀 Subidas (<span class="current-tf-label">1D</span>) <span id="count-gainers" class="bg-emerald-950 px-1.5 rounded">0</span></h2>
+        <div id="topGainersList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll"></div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <h2 class="text-xs font-bold text-rose-400 mb-2 flex justify-between">📉 Caídas (<span class="current-tf-label">1D</span>) <span id="count-losers" class="bg-rose-950 px-1.5 rounded">0</span></h2>
+        <div id="topLosersList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll"></div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <h2 class="text-xs font-bold text-amber-400 mb-2 flex justify-between">🎯 Cerca Mínimos <span id="count-lows" class="bg-amber-950 px-1.5 rounded">0</span></h2>
+        <div id="nearLowsList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll"></div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 border-l-4 border-l-purple-500">
+        <h2 class="text-xs font-bold text-purple-400 mb-2 flex justify-between">💰 Candidatas PUT <span id="count-puts" class="bg-purple-950 px-1.5 rounded">0</span></h2>
+        <div id="putCandidatesList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll"></div>
+      </div>
+    </div>
+
+    <div class="bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-800 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between gap-3">
+        <input type="text" id="searchInput" placeholder="Buscar ticker..." oninput="renderTable()" class="bg-slate-950 border border-slate-800 text-xs px-3 py-2 rounded-lg text-slate-200 w-full sm:w-64" />
+        <div class="flex gap-1.5">
+          <button onclick="setFilter('all')" id="btn-filter-all" class="filter-btn px-3 py-1.5 rounded-lg text-xs bg-sky-600 text-white">Todas</button>
+          <button onclick="setFilter('highlighted')" id="btn-filter-highlighted" class="filter-btn px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-300">⭐ Favs</button>
+          <button onclick="setFilter('puts')" id="btn-filter-puts" class="filter-btn px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-300">🎯 Puts</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[800px]">
+          <thead>
+            <tr class="border-b border-slate-800 text-xs uppercase text-slate-400 bg-slate-950/70">
+              <th onclick="sortTable('fav')" class="py-2 px-2 sortable text-center">Fav <span id="sort-fav"></span></th>
+              <th onclick="sortTable('ticker')" class="py-2 px-3 sortable">Ticker <span id="sort-ticker"></span></th>
+              <th onclick="sortTable('price')" class="py-2 px-3 text-right sortable">Precio <span id="sort-price"></span></th>
+              <th onclick="sortTable('1D')" class="py-2 px-2 text-right sortable">1D <span id="sort-1D"></span></th>
+              <th onclick="sortTable('1W')" class="py-2 px-2 text-right sortable">1W <span id="sort-1W"></span></th>
+              <th onclick="sortTable('1M')" class="py-2 px-2 text-right sortable">1M <span id="sort-1M"></span></th>
+              <th onclick="sortTable('YTD')" class="py-2 px-2 text-right sortable">YTD <span id="sort-YTD"></span></th>
+              <th onclick="sortTable('1Y')" class="py-2 px-2 text-right sortable">1Y <span id="sort-1Y"></span></th>
+              <th onclick="sortTable('min52')" class="py-2 px-2 text-right sortable">Mín 52S <span id="sort-min52"></span></th>
+              <th onclick="sortTable('max52')" class="py-2 px-2 text-right sortable">Máx 52S <span id="sort-max52"></span></th>
+              <th onclick="sortTable('put')" class="py-2 px-3 text-center sortable">Estrategia <span id="sort-put"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-800/60 text-xs sm:text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let rawData = [], currentTimeframe = '1D', currentFilter = 'all';
+    let highlightedTickers = JSON.parse(localStorage.getItem('highlightedTickers') || '[]');
+    let currentSortColumn = '1D', currentSortDir = 'desc';
+    const DEFAULT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPT5EZClEQaNvwEI1XklAQ3_oBxz1ez6ZLz3YDCHS6nlehMnMB_SyLklMjBgQBNJtqbOIEl5PUIMDF/pub?output=csv";
+
+    function normalizeRow(row) {
+      const getVal = (keys) => {
+        for (let k of keys) {
+          const foundKey = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase().trim());
+          if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+        }
+        return null;
+      };
+      const cleanNum = (val) => val ? parseFloat(val.toString().replace('%','').replace('€','').replace('$','').replace(',','.').trim()) || 0 : 0;
+
+      const ticker = getVal(['TICKER', 'Ticker']) || 'UNKNOWN';
+      const nombre = getVal(['NOMBRE', 'Nombre']) || ticker;
+      const price = cleanNum(getVal(['PRECIO', 'Precio']));
+      const change1D = cleanNum(getVal(['HOY', '1D', '1D %']));
+      const change1W = cleanNum(getVal(['1 SEMANA', '1W', '1S %']));
+      const change1M = cleanNum(getVal(['1 MES', '1M', '1M %']));
+      const changeYTD = cleanNum(getVal(['YTD', 'YTD %']));
+      const change1Y = cleanNum(getVal(['1 AÑO', '1Y', '1A %']));
+      const min52 = cleanNum(getVal(['MINIMO 52', 'Min 52']));
+      const max52 = cleanNum(getVal(['MAXIMO 52', 'Max 52']));
+      const pctAboveMin = (min52 > 0 && price >= min52) ? ((price - min52) / min52) * 100 : 0;
+
+      return { ticker, nombre, price, changes: { '1D': change1D, '1W': change1W, '1M': change1M, 'YTD': changeYTD, '1Y': change1Y }, min52, max52, pctAboveMin };
+    }
+
+    document.getElementById('csvFileInput')?.addEventListener('change', (e) => {
+      if (e.target.files[0]) Papa.parse(e.target.files[0], { header: true, skipEmptyLines: true, complete: (res) => processParsedData(res.data) });
+    });
+
+    async function loadFromUrl() {
+      let url = document.getElementById('sheetUrlInput').value.trim() || DEFAULT_URL;
+      document.getElementById('sheetUrlInput').value = url;
+      localStorage.setItem('savedSheetUrl', url);
+
+      const sources = [
+        url,
+        "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url),
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
+        "https://corsproxy.io/?" + encodeURIComponent(url)
+      ];
+
+      let csvText = null;
+
+      for (let src of sources) {
+        try {
+          let res = await fetch(src);
+          if (res.ok) {
+            let text = await res.text();
+            if (!text.trim().startsWith("<!DOCTYPE") && !text.trim().startsWith("<html")) {
+              csvText = text;
+              break;
+            }
+          }
+        } catch (e) {
+          console.warn("Falló conexión:", src);
+        }
+      }
+
+      if (csvText) {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (res) => processParsedData(res.data)
+        });
+      } else {
+        alert("⚠️ No se pudieron obtener los datos. Comprueba la URL o sube el archivo CSV manualmente.");
+      }
+    }
+
+    function processParsedData(data) {
+      rawData = data.map(normalizeRow).filter(i => i.ticker !== 'UNKNOWN' && i.price > 0);
+      if (rawData.length === 0) {
+        alert("⚠️ Se conectó a la hoja pero no se encontraron filas válidas.");
+      }
+      renderCards(); renderTable();
+    }
+
+    function setTimeframe(tf) {
+      currentTimeframe = tf;
+      document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('bg-sky-600', 'text-white'));
+      document.getElementById(`tf-${tf}`).classList.add('bg-sky-600', 'text-white');
+      document.querySelectorAll('.current-tf-label').forEach(el => el.textContent = tf);
+      renderCards();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-sky-600', 'text-white'));
+      document.getElementById(`btn-filter-${filter}`).classList.add('bg-sky-600', 'text-white');
+      renderTable();
+    }
+
+    function toggleHighlight(ticker) {
+      highlightedTickers = highlightedTickers.includes(ticker) ? highlightedTickers.filter(t => t !== ticker) : [...highlightedTickers, ticker];
+      localStorage.setItem('highlightedTickers', JSON.stringify(highlightedTickers));
+      renderTable();
+    }
+
+    function sortTable(col) {
+      if (currentSortColumn === col) currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+      else { currentSortColumn = col; currentSortDir = ['ticker', 'fav'].includes(col) ? 'asc' : 'desc'; }
+      renderTable();
+    }
+
+    function renderCards() {
+      const g = [...rawData].filter(i => i.changes[currentTimeframe] > 0).sort((a,b) => b.changes[currentTimeframe] - a.changes[currentTimeframe]);
+      document.getElementById('count-gainers').textContent = g.length;
+      document.getElementById('topGainersList').innerHTML = g.map(i => `<div class="flex justify-between bg-slate-950 p-1.5 rounded"><span>${i.ticker}</span><span class="text-emerald-400 font-bold">+${i.changes[currentTimeframe].toFixed(2)}%</span></div>`).join('') || 'Sin datos';
+
+      const l = [...rawData].filter(i => i.changes[currentTimeframe] < 0).sort((a,b) => a.changes[currentTimeframe] - b.changes[currentTimeframe]);
+      document.getElementById('count-losers').textContent = l.length;
+      document.getElementById('topLosersList').innerHTML = l.map(i => `<div class="flex justify-between bg-slate-950 p-1.5 rounded"><span>${i.ticker}</span><span class="text-rose-400 font-bold">${i.changes[currentTimeframe].toFixed(2)}%</span></div>`).join('') || 'Sin datos';
+
+      const low = [...rawData].filter(i => i.min52 > 0).sort((a,b) => a.pctAboveMin - b.pctAboveMin);
+      document.getElementById('count-lows').textContent = low.length;
+      document.getElementById('nearLowsList').innerHTML = low.map(i => `<div class="flex justify-between bg-slate-950 p-1.5 rounded"><span>${i.ticker}</span><span class="text-amber-400">+${i.pctAboveMin.toFixed(1)}% mín</span></div>`).join('') || 'Sin datos';
+
+      const p = [...rawData].filter(i => i.changes[currentTimeframe] < 0 && i.min52 > 0).sort((a,b) => (a.pctAboveMin + a.changes[currentTimeframe]) - (b.pctAboveMin + b.changes[currentTimeframe]));
+      document.getElementById('count-puts').textContent = p.length;
+      document.getElementById('putCandidatesList').innerHTML = p.map(i => `<div class="flex justify-between bg-slate-950 p-1.5 rounded"><span>${i.ticker}</span><span class="text-purple-400">+${i.pctAboveMin.toFixed(1)}% mín</span></div>`).join('') || 'Sin datos';
+    }
+
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      ['fav', 'ticker', 'price', '1D', '1W', '1M', 'YTD', '1Y', 'min52', 'max52', 'put'].forEach(col => {
+        const span = document.getElementById(`sort-${col}`);
+        if (span) span.textContent = currentSortColumn === col ? (currentSortDir === 'asc' ? '▲' : '▼') : '';
+      });
+
+      let filtered = rawData.filter(i => (i.ticker.toLowerCase().includes(search) || i.nombre.toLowerCase().includes(search)) && (currentFilter === 'all' || (currentFilter === 'highlighted' && highlightedTickers.includes(i.ticker)) || (currentFilter === 'puts' && i.changes['1D'] < -1 && i.pctAboveMin < 15)));
+
+      filtered.sort((a, b) => {
+        let valA = currentSortColumn === 'fav' ? (highlightedTickers.includes(a.ticker)?1:0) : currentSortColumn === 'ticker' ? a.ticker : currentSortColumn === 'price' ? a.price : ['1D','1W','1M','YTD','1Y'].includes(currentSortColumn) ? a.changes[currentSortColumn] : currentSortColumn === 'min52' ? a.min52 : currentSortColumn === 'max52' ? a.max52 : a.pctAboveMin;
+        let valB = currentSortColumn === 'fav' ? (highlightedTickers.includes(b.ticker)?1:0) : currentSortColumn === 'ticker' ? b.ticker : currentSortColumn === 'price' ? b.price : ['1D','1W','1M','YTD','1Y'].includes(currentSortColumn) ? b.changes[currentSortColumn] : currentSortColumn === 'min52' ? b.min52 : currentSortColumn === 'max52' ? b.max52 : b.pctAboveMin;
+        return typeof valA === 'string' ? (currentSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)) : (currentSortDir === 'asc' ? valA - valB : valB - valA);
+      });
+
+      const pill = (v) => `<span class="font-mono font-bold ${v>=0?'text-emerald-400':'text-rose-400'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
+
+      document.getElementById('tableBody').innerHTML = filtered.map(i => `
+        <tr class="hover:bg-slate-900/80 ${highlightedTickers.includes(i.ticker) ? 'bg-amber-950/20 border-l-2 border-l-amber-400' : ''}">
+          <td class="py-2 px-2 text-center"><button onclick="toggleHighlight('${i.ticker}')">${highlightedTickers.includes(i.ticker) ? '⭐' : '☆'}</button></td>
+          <td class="py-2 px-3"><span class="font-bold block">${i.ticker}</span><span class="text-[9px] text-slate-400 block truncate max-w-[100px]">${i.nombre}</span></td>
+          <td class="py-2 px-3 text-right font-mono">${i.price.toFixed(2)}</td>
+          <td class="py-2 px-2 text-right">${pill(i.changes['1D'])}</td>
+          <td class="py-2 px-2 text-right">${pill(i.changes['1W'])}</td>
+          <td class="py-2 px-2 text-right">${pill(i.changes['1M'])}</td>
+          <td class="py-2 px-2 text-right">${pill(i.changes['YTD'])}</td>
+          <td class="py-2 px-2 text-right">${pill(i.changes['1Y'])}</td>
+          <td class="py-2 px-2 text-right text-slate-400 text-xs">${i.min52 ? i.min52.toFixed(2) : '-'}</td>
+          <td class="py-2 px-2 text-right text-slate-400 text-xs">${i.max52 ? i.max52.toFixed(2) : '-'}</td>
+          <td class="py-2 px-3 text-center">${(i.changes['1D'] < 0 && i.pctAboveMin < 12) ? '<span class="bg-purple-900/60 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-700">Vender PUT</span>' : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('sheetUrlInput').value = localStorage.getItem('savedSheetUrl') || DEFAULT_URL;
+      loadFromUrl();
+    });
+
+    setInterval(loadFromUrl, 300000);
+    setTimeframe('1D');
+  </script>
+</body>
+</html>
