@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Dashboard Cartera v2.0.1</title>
+  <title>Dashboard Cartera v2.0.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
+    html { scroll-behavior: smooth; }
     .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
     .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { color: #f8fafc; background-color: rgba(30, 41, 59, 0.8); }
     
-    /* Columnas fijas (Sticky) a la izquierda y Z-index para congelar cabecera */
+    /* Columnas fijas (Sticky) a la izquierda */
     .sticky-col-1 { position: sticky; left: 0px; z-index: 20; }
     .sticky-col-2 { position: sticky; left: 36px; z-index: 20; }
     .sticky-col-3 { position: sticky; left: 121px; z-index: 20; box-shadow: 3px 0 6px -2px rgba(0,0,0,0.5); }
     
-    /* Z-index superior para las 3 esquinas superiores fijas */
     th.sticky-col-1 { z-index: 45 !important; }
     th.sticky-col-2 { z-index: 45 !important; }
     th.sticky-col-3 { z-index: 45 !important; }
@@ -28,14 +28,14 @@
     .bg-row-fav { background-color: rgba(120, 53, 15, 0.35) !important; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-12 selection:bg-sky-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-16 selection:bg-sky-500 selection:text-white relative">
 
   <!-- Encabezado compacto móvil -->
-  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-3 py-2.5 flex flex-col sm:flex-row justify-between items-center gap-2">
+  <header id="header-top" class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-3 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center justify-between w-full sm:w-auto">
         <h1 class="text-base font-bold text-white flex items-center gap-1.5">
-          📈 <span class="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">Cartera v2.0.1</span>
+          📈 <span class="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">Cartera v2.0.2</span>
         </h1>
         <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition">
           📂 CSV <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
@@ -51,10 +51,20 @@
   <main class="max-w-7xl mx-auto px-2 sm:px-4 mt-3 space-y-6">
 
     <!-- SECCIÓN 1: TABLA PRINCIPAL DE ACCIONES -->
-    <section class="bg-slate-900 rounded-xl border border-slate-800 p-2.5 sm:p-4 space-y-3">
+    <section id="sec-tabla" class="bg-slate-900 rounded-xl border border-slate-800 p-2.5 sm:p-4 space-y-3">
       
+      <!-- BOTONES NAVEGACIÓN RÁPIDA A OTROS CAJONES -->
+      <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1 border-b border-slate-800/80">
+        <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold whitespace-nowrap">Ir a:</span>
+        <a href="#sec-tabla" class="bg-sky-950 text-sky-300 border border-sky-800/60 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📊 General</a>
+        <a href="#cajon-subidas" class="bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🚀 Subidas</a>
+        <a href="#cajon-caidas" class="bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📉 Caídas</a>
+        <a href="#cajon-minimos" class="bg-slate-950 hover:bg-slate-800 text-amber-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🎯 Mínimos</a>
+        <a href="#cajon-puts" class="bg-slate-950 hover:bg-slate-800 text-purple-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">💰 Puts</a>
+      </div>
+
       <!-- Barra de Filtros y Búsqueda -->
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2 pt-1">
         <div class="flex items-center gap-2">
           <input type="text" id="searchInput" placeholder="🔍 Buscar ticker o nombre..." oninput="renderTable()" class="bg-slate-950 border border-slate-800 text-xs px-3 py-2 rounded-lg text-slate-200 flex-1 focus:outline-none focus:border-sky-500" />
           <select id="carteraFilter" onchange="renderTable()" class="bg-slate-950 border border-slate-800 text-xs px-2 py-2 rounded-lg text-slate-300 focus:outline-none focus:border-sky-500 font-medium">
@@ -72,8 +82,8 @@
         </div>
       </div>
 
-      <!-- Contenedor con Scroll Horizontal y Cabecera Fija (sticky top-0) -->
-      <div class="overflow-x-auto custom-scroll border border-slate-800/80 rounded-lg max-h-[65vh] overflow-y-auto relative">
+      <!-- Tabla Principal -->
+      <div class="overflow-x-auto custom-scroll border border-slate-800/80 rounded-lg max-h-[60vh] overflow-y-auto relative">
         <table class="w-full text-left border-collapse min-w-[920px]">
           <thead>
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400 bg-slate-950 sticky top-0 z-30 shadow-md">
@@ -88,7 +98,6 @@
               <th onclick="sortTable('1Y')" class="py-2.5 px-2 text-right sortable">1Y<span id="sort-1Y"></span></th>
               <th onclick="sortTable('pctAboveMin')" class="py-2.5 px-2 text-right sortable text-amber-400">vs Mín 52<span id="sort-pctAboveMin"></span></th>
               <th onclick="sortTable('max52')" class="py-2.5 px-2 text-right sortable">Máx 52<span id="sort-max52"></span></th>
-              <!-- Columna Cartera: Solo informativa, no ordenable -->
               <th class="py-2.5 px-2 text-center">Cartera</th>
             </tr>
           </thead>
@@ -97,8 +106,8 @@
       </div>
     </section>
 
-    <!-- SECCIÓN 2: TARJETAS DE RESUMEN Y OPORTUNIDADES -->
-    <section class="space-y-3 pt-2">
+    <!-- SECCIÓN 2: TARJETAS CON ID PARA NAVEGACIÓN RÁPIDA -->
+    <section class="space-y-4 pt-2">
       <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
         <span class="text-xs font-semibold text-slate-300">Marco temporal tarjetas:</span>
         <div class="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
@@ -110,38 +119,47 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Cajón Subidas -->
+        <div id="cajon-subidas" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 scroll-mt-20">
           <h2 class="text-xs font-bold text-emerald-400 mb-2 flex justify-between items-center">
             🚀 Subidas (<span class="current-tf-label">1D</span>) <span id="count-gainers" class="bg-emerald-950/80 text-emerald-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
           </h2>
-          <div id="topGainersList" class="space-y-1.5 text-xs max-h-40 overflow-y-auto custom-scroll pr-1"></div>
+          <div id="topGainersList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll pr-1"></div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <!-- Cajón Caídas -->
+        <div id="cajon-caidas" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 scroll-mt-20">
           <h2 class="text-xs font-bold text-rose-400 mb-2 flex justify-between items-center">
             📉 Caídas (<span class="current-tf-label">1D</span>) <span id="count-losers" class="bg-rose-950/80 text-rose-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
           </h2>
-          <div id="topLosersList" class="space-y-1.5 text-xs max-h-40 overflow-y-auto custom-scroll pr-1"></div>
+          <div id="topLosersList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll pr-1"></div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <!-- Cajón Mínimos -->
+        <div id="cajon-minimos" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 scroll-mt-20">
           <h2 class="text-xs font-bold text-amber-400 mb-2 flex justify-between items-center">
             🎯 Cerca Mínimos 52S <span id="count-lows" class="bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
           </h2>
-          <div id="nearLowsList" class="space-y-1.5 text-xs max-h-40 overflow-y-auto custom-scroll pr-1"></div>
+          <div id="nearLowsList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll pr-1"></div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 border-l-4 border-l-purple-500">
+        <!-- Cajón Puts -->
+        <div id="cajon-puts" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 border-l-4 border-l-purple-500 scroll-mt-20">
           <h2 class="text-xs font-bold text-purple-400 mb-2 flex justify-between items-center">
             💰 Candidatas PUT <span id="count-puts" class="bg-purple-950/80 text-purple-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
           </h2>
-          <div id="putCandidatesList" class="space-y-1.5 text-xs max-h-40 overflow-y-auto custom-scroll pr-1"></div>
+          <div id="putCandidatesList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scroll pr-1"></div>
         </div>
       </div>
     </section>
 
   </main>
+
+  <!-- Botón flotante para regresar arriba rápidamente en móvil -->
+  <a href="#header-top" class="fixed bottom-4 right-4 bg-sky-600 hover:bg-sky-500 text-white p-2.5 rounded-full shadow-lg border border-sky-400/30 z-50 flex items-center justify-center transition active:scale-95">
+    ⬆️
+  </a>
 
   <script>
     let rawData = [], currentTimeframe = '1D', currentFilter = 'all';
