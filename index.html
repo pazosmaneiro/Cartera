@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Dashboard Cartera v2.0.2</title>
+  <title>Dashboard Cartera v2.0.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
@@ -31,11 +31,11 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-16 selection:bg-sky-500 selection:text-white relative">
 
   <!-- Encabezado compacto móvil -->
-  <header id="header-top" class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-50 backdrop-blur-md">
+  <header id="top" class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-50 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-3 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center justify-between w-full sm:w-auto">
         <h1 class="text-base font-bold text-white flex items-center gap-1.5">
-          📈 <span class="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">Cartera v2.0.2</span>
+          📈 <span class="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">Cartera v2.0.3</span>
         </h1>
         <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 transition">
           📂 CSV <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
@@ -56,11 +56,11 @@
       <!-- BOTONES NAVEGACIÓN RÁPIDA A OTROS CAJONES -->
       <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1 border-b border-slate-800/80">
         <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold whitespace-nowrap">Ir a:</span>
-        <a href="#sec-tabla" class="bg-sky-950 text-sky-300 border border-sky-800/60 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📊 General</a>
-        <a href="#cajon-subidas" class="bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🚀 Subidas</a>
-        <a href="#cajon-caidas" class="bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📉 Caídas</a>
-        <a href="#cajon-minimos" class="bg-slate-950 hover:bg-slate-800 text-amber-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🎯 Mínimos</a>
-        <a href="#cajon-puts" class="bg-slate-950 hover:bg-slate-800 text-purple-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">💰 Puts</a>
+        <button onclick="scrollToId('sec-tabla')" class="bg-sky-950 text-sky-300 border border-sky-800/60 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📊 General</button>
+        <button onclick="scrollToId('cajon-subidas')" class="bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🚀 Subidas</button>
+        <button onclick="scrollToId('cajon-caidas')" class="bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">📉 Caídas</button>
+        <button onclick="scrollToId('cajon-minimos')" class="bg-slate-950 hover:bg-slate-800 text-amber-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">🎯 Mínimos</button>
+        <button onclick="scrollToId('cajon-puts')" class="bg-slate-950 hover:bg-slate-800 text-purple-400 border border-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1">💰 Puts</button>
       </div>
 
       <!-- Barra de Filtros y Búsqueda -->
@@ -156,16 +156,28 @@
 
   </main>
 
-  <!-- Botón flotante para regresar arriba rápidamente en móvil -->
-  <a href="#header-top" class="fixed bottom-4 right-4 bg-sky-600 hover:bg-sky-500 text-white p-2.5 rounded-full shadow-lg border border-sky-400/30 z-50 flex items-center justify-center transition active:scale-95">
+  <!-- Botón flotante para regresar arriba mediante JavaScript -->
+  <button onclick="scrollToTop()" class="fixed bottom-4 right-4 bg-sky-600 hover:bg-sky-500 text-white p-3 rounded-full shadow-xl border border-sky-400/40 z-50 flex items-center justify-center transition active:scale-90 text-sm font-bold">
     ⬆️
-  </a>
+  </button>
 
   <script>
     let rawData = [], currentTimeframe = '1D', currentFilter = 'all';
     let localFavs = JSON.parse(localStorage.getItem('highlightedTickers') || '[]');
     let currentSortColumn = '1D', currentSortDir = 'desc';
     const DEFAULT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPT5EZClEQaNvwEI1XklAQ3_oBxz1ez6ZLz3YDCHS6nlehMnMB_SyLklMjBgQBNJtqbOIEl5PUIMDF/pub?output=csv";
+
+    // Funciones de Scroll Garantizadas para Móvil
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function scrollToId(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
 
     function normalizeRow(row) {
       const getVal = (keys) => {
