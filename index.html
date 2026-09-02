@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Dashboard Cartera v2.0.4</title>
+
+  <!-- ICONO DE LA APLICACIÓN -->
+  <link rel="icon" type="image/png" href="budget.png" />
+  <link rel="apple-touch-icon" href="budget.png" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
@@ -155,7 +160,7 @@
 
   </main>
 
-  <!-- Botón flotante para regresar arriba (Z-index máximo y eventos aislados) -->
+  <!-- Botón flotante para regresar arriba -->
   <button type="button" id="btn-scroll-top" class="fixed bottom-6 right-6 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white w-12 h-12 rounded-full shadow-2xl border-2 border-sky-300/40 z-[9999] flex items-center justify-center transition-all transform active:scale-95 text-lg font-bold cursor-pointer">
     ⬆️
   </button>
@@ -166,7 +171,6 @@
     let currentSortColumn = '1D', currentSortDir = 'desc';
     const DEFAULT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPT5EZClEQaNvwEI1XklAQ3_oBxz1ez6ZLz3YDCHS6nlehMnMB_SyLklMjBgQBNJtqbOIEl5PUIMDF/pub?output=csv";
 
-    // Asignación directa del evento de scroll arriba para evitar fallos de delegación
     document.getElementById('btn-scroll-top').addEventListener('click', function(e) {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: 'smooth' });
